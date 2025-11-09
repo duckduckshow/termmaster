@@ -229,133 +229,162 @@ document.addEventListener("DOMContentLoaded",()=>{
     return `(${a}${v} + ${b}) · (${a}${v} - ${b}) = ?`;
   }
 
-// --- Minimalistische, klare Lösungswege ---
+  // --- Schlichte, klare Lösungswege ---
   const explanations = {
     1: {
-      title: "🧩 Ganze Zahlen",
+      title: "Ganze Zahlen",
       steps: [
-        "<b style='color:#007bff;'>1.</b> Vorzeichen bestimmen:<br>gleiche Vorzeichen → <b style='color:green;'>+</b><br>verschiedene Vorzeichen → <b style='color:red;'>−</b>",
-        "<b style='color:#007bff;'>2.</b> Zahlen multiplizieren"
+        "1. Vorzeichen bestimmen:",
+        "   gleiche Vorzeichen → +",
+        "   verschiedene Vorzeichen → −",
+        "2. Zahlen multiplizieren"
       ],
       example: "(−3) · (−2) = +6"
     },
     2: {
-      title: "🧩 Monome",
+      title: "Monome",
       steps: [
-        "<b style='color:#007bff;'>1.</b> Vorzeichen bestimmen:<br>gleiche Vorzeichen → <b style='color:green;'>+</b><br>verschiedene Vorzeichen → <b style='color:red;'>−</b>",
-        "<b style='color:#007bff;'>2.</b> Zahlen multiplizieren und Variablen anhängen (z. B. x·x = x²)"
+        "1. Vorzeichen bestimmen:",
+        "   gleiche Vorzeichen → +",
+        "   verschiedene Vorzeichen → −",
+        "2. Zahlen multiplizieren und Variablen anhängen (x·x = x²)"
       ],
       example: "(−3x) · (2x) = −6x²"
     },
     3: {
-      title: "🧩 Monom · Binom",
+      title: "Monom · Binom",
       steps: [
-        "<b style='color:#007bff;'>1.</b> Vorzeichen beachten:<br>gleiche → <b style='color:green;'>+</b><br>verschiedene → <b style='color:red;'>−</b>",
-        "<b style='color:#007bff;'>2.</b> Monom mit jedem Glied der Klammer multiplizieren"
+        "1. Vorzeichen beachten:",
+        "   gleiche → +   verschiedene → −",
+        "2. Monom mit jedem Glied der Klammer multiplizieren"
       ],
       example: "3x · (x + 2) = 3x² + 6x"
     },
     4: {
-      title: "🧩 Binom · Binom",
+      title: "Binom · Binom",
       steps: [
-        "<b style='color:#007bff;'>1.</b> Vorzeichen beachten:<br>gleiche → <b style='color:green;'>+</b><br>verschiedene → <b style='color:red;'>−</b>",
-        "<b style='color:#007bff;'>2.</b> Jeden Term der ersten Klammer mit jedem der zweiten multiplizieren"
+        "1. Vorzeichen beachten:",
+        "   gleiche → +   verschiedene → −",
+        "2. Jeden Term der ersten Klammer mit jedem der zweiten multiplizieren"
       ],
       example: "(x + 2)(x + 3) = x² + 5x + 6"
     },
     5: {
-      title: "🧩 Gemischte Aufgaben",
+      title: "Gemischte Aufgaben",
       steps: [
-        "<b style='color:#007bff;'>1.</b> Erkennen, welche Regel passt:<br>gleiche → <b style='color:green;'>+</b><br>verschiedene → <b style='color:red;'>−</b>",
-        "<b style='color:#007bff;'>2.</b> Passendes Verfahren anwenden"
+        "1. Erkennen, welche Regel passt:",
+        "   gleiche → +   verschiedene → −",
+        "2. Passendes Verfahren anwenden"
       ],
       example: "(2x + 1)(x − 4) = 2x² − 7x − 4"
     }
   };
 
-
-
-  // Levelwechsel + Fortschritt
+  // --- Fortschritts- und Levelsteuerung ---
   function nextLevel(){
-    if(level<4 && score>=8){
-      level++; alert(`🎯 Level geschafft! ${LEVEL_NAMES[level-1]} beginnt jetzt.`);
-      round=1;score=0;
-    } else if(level===4 && score>=8){
-      level=5; alert("🏆 Super! Du hast alle Level geschafft. Jetzt kommen gemischte Aufgaben!");
-      round=1;score=0;
+    if(score >= 8 && level < 4){
+      alert(`🎯 Level ${level} geschafft! Weiter mit ${LEVEL_NAMES[level]}.`);
+      level++;
+      round = 1;
+      score = 0;
+      newBtn.textContent = "Neue Aufgabe";
+      newTask();
+    } else if(score >= 8 && level === 4){
+      alert("🏆 Alle vier Level geschafft! Jetzt kommt das gemischte Level.");
+      level = 5;
+      round = 1;
+      score = 0;
+      newBtn.textContent = "Neue Aufgabe";
+      newTask();
+    } else {
+      // Wenn keine 8 Punkte, gleiche Level wiederholen
+      alert(`Level ${level} beendet mit ${score}/${totalRounds} Punkten. Versuch es gleich nochmal!`);
+      round = 1;
+      score = 0;
+      newBtn.textContent = "Neue Aufgabe";
+      newTask();
     }
   }
+
   function updateProgress(){
-    const percent=((round-1)/totalRounds)*100;
-    progressBar.style.width=percent+"%";
+    const percent = ((round - 1) / totalRounds) * 100;
+    progressBar.style.width = percent + "%";
   }
 
   function newTask(){
-    resultEl.innerText="";answerEl.value="";firstTry=true;
-    updateProgress();levelDisplay.innerText=LEVEL_NAMES[level-1];
-    if(round>totalRounds){
-      taskEl.innerText="🎉 Level fertig!";
-      resultEl.style.color="green";
-      resultEl.innerText=`Endstand: ${score}/${totalRounds} Punkte.`;
-      newBtn.textContent="Weiter";
-      nextLevel();updateProgress();return;
+    resultEl.innerText = "";
+    answerEl.value = "";
+    firstTry = true;
+    updateProgress();
+    levelDisplay.innerText = LEVEL_NAMES[level - 1];
+
+    if (round > totalRounds) {
+      resultEl.style.color = "green";
+      resultEl.innerHTML = `🎉 Level fertig!<br>Endstand: <b>${score}</b> von <b>${totalRounds}</b> Punkten.`;
+      nextLevel();
+      return;
     }
+
     let aufgabe;
-    switch(level){
-      case 1:aufgabe=createIntTask();break;
-      case 2:aufgabe=createSimpleTask();break;
-      case 3:aufgabe=createMonomBinom();break;
-      case 4:aufgabe=Math.random()<0.5?createGeneralBinom():createPlusMinusBinom();break;
-      case 5:{
-        const funcs=[createIntTask,createSimpleTask,createMonomBinom,createGeneralBinom,createPlusMinusBinom];
-        aufgabe=randomChoice(funcs)();break;
-      }
+    switch (level) {
+      case 1: aufgabe = createIntTask(); break;
+      case 2: aufgabe = createSimpleTask(); break;
+      case 3: aufgabe = createMonomBinom(); break;
+      case 4: aufgabe = Math.random() < 0.5 ? createGeneralBinom() : createPlusMinusBinom(); break;
+      case 5:
+        const funcs = [createIntTask, createSimpleTask, createMonomBinom, createGeneralBinom, createPlusMinusBinom];
+        aufgabe = randomChoice(funcs)(); break;
     }
-    taskEl.innerText=`${LEVEL_NAMES[level-1]}\n${aufgabe}`;
-    scoreEl.innerText=`Aufgabe ${round} von ${totalRounds} – Punkte: ${score}`;
+
+    taskEl.innerText = `${LEVEL_NAMES[level - 1]}\n${aufgabe}`;
+    scoreEl.innerText = `Aufgabe ${round} von ${totalRounds} – Punkte: ${score}`;
   }
 
-function checkAnswer(){
-    const input=answerEl.value.trim();
-    if(!input){
-      resultEl.style.color="gray";
-      resultEl.innerText="Bitte gib eine Lösung ein.";
+  function checkAnswer(){
+    const input = answerEl.value.trim();
+    if (!input) {
+      resultEl.style.color = "gray";
+      resultEl.innerText = "Bitte gib eine Lösung ein.";
       return;
     }
     answerEl.blur();
 
-    if(normMul(input)===normMul(correctSolution)){
-      resultEl.style.color="green";
-      if(firstTry){
-        resultEl.innerText="✅ Richtig! (+1 Punkt)";
+    if (normMul(input) === normMul(correctSolution)) {
+      resultEl.style.color = "green";
+      if (firstTry) {
+        resultEl.innerText = "✅ Richtig! (+1 Punkt)";
         score++;
       } else {
-        resultEl.innerText="✅ Richtig – aber kein Punkt mehr (zweiter Versuch)";
+        resultEl.innerText = "✅ Richtig – aber kein Punkt mehr (zweiter Versuch)";
       }
-      firstTry=false;
+      firstTry = false;
       round++;
       updateProgress();
-      scoreEl.innerText=`Aufgabe ${Math.min(round,totalRounds)} von ${totalRounds} – Punkte: ${score}`;
+      scoreEl.innerText = `Aufgabe ${Math.min(round, totalRounds)} von ${totalRounds} – Punkte: ${score}`;
     } else {
-      const exp=explanations[level];
-      resultEl.style.color="red";
-      let html=`❌ Falsch! Richtige Lösung: <b>${correctSolution}</b><br>`;
-      if(exp){
-        html+=`<details open><summary style="color:#007bff;cursor:pointer;">🧩 Lösungsweg anzeigen</summary>`;
-        html+=`<b>${exp.title}</b><br>`;
-        html+=exp.steps
-          .map(s=>`<div style="text-align:left;max-width:420px;margin:4px auto;">${s}</div>`)
-          .join("");
-        html+=`<div style="margin-top:6px;color:#007bff;"><b>Beispiel:</b> ${exp.example}</div></details>`;
+      const exp = explanations[level];
+      resultEl.style.color = "#000";
+      let html = `❌ <span style="color:#d00;">Falsch!</span> Richtige Lösung: <b>${correctSolution}</b><br>`;
+      if (exp) {
+        html += `<details open><summary style="color:#007bff;cursor:pointer;font-weight:500;">🧩 Lösungsweg anzeigen</summary>`;
+        html += `<div style="text-align:left;max-width:420px;margin:6px auto;font-size:0.95em;line-height:1.4;color:#000;">`;
+        html += `<div style="font-weight:600;margin-bottom:4px;">${exp.title}</div>`;
+        html += exp.steps.map(s => `<div>${s}</div>`).join("");
+        html += `<div style="margin-top:6px;font-style:italic;">Beispiel: ${exp.example}</div></div></details>`;
       }
-      resultEl.innerHTML=html;
-      firstTry=false;
+      resultEl.innerHTML = html;
+      firstTry = false;
     }
   }
-  checkBtn.addEventListener("click",checkAnswer);
-  newBtn.addEventListener("click",newTask);
-  answerEl.addEventListener("keydown",e=>{if(e.key==="Enter")checkAnswer();});
+
+  // --- Eventhandler ---
+  checkBtn.addEventListener("click", checkAnswer);
+  newBtn.addEventListener("click", newTask);
+  answerEl.addEventListener("keydown", e => { if (e.key === "Enter") checkAnswer(); });
+
   newTask();
+});
+
 
 });
 </script>
