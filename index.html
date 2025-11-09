@@ -275,6 +275,38 @@ document.addEventListener("DOMContentLoaded",()=>{
     scoreEl.innerText=`Aufgabe ${round} von ${totalRounds} – Punkte: ${score}`;
   }
 
+   let firstTry = true; // NEU: merkt, ob erste Eingabe noch unversucht ist
+
+  function newTask(){
+    resultEl.innerText="";
+    answerEl.value="";
+    firstTry = true; // bei neuer Aufgabe wieder auf "erster Versuch" setzen
+    updateProgress();
+    levelDisplay.innerText=LEVEL_NAMES[level-1];
+    if(round>totalRounds){
+      taskEl.innerText="🎉 Level fertig!";
+      resultEl.style.color="green";
+      resultEl.innerText=`Endstand: ${score}/${totalRounds} Punkte.`;
+      newBtn.textContent="Weiter";
+      nextLevel();
+      updateProgress();
+      return;
+    }
+    let aufgabe;
+    switch(level){
+      case 1: aufgabe=createIntTask(); break;
+      case 2: aufgabe=createSimpleTask(); break;
+      case 3: aufgabe=createMonomBinom(); break;
+      case 4: aufgabe=Math.random()<0.5?createGeneralBinom():createPlusMinusBinom(); break;
+      case 5:{
+        const funcs=[createIntTask,createSimpleTask,createMonomBinom,createGeneralBinom,createPlusMinusBinom];
+        aufgabe=randomChoice(funcs)(); break;
+      }
+    }
+    taskEl.innerText=`${LEVEL_NAMES[level-1]}\n${aufgabe}`;
+    scoreEl.innerText=`Aufgabe ${round} von ${totalRounds} – Punkte: ${score}`;
+  }
+
   function checkAnswer(){
     const input=answerEl.value.trim();
     if(!input){
@@ -282,17 +314,28 @@ document.addEventListener("DOMContentLoaded",()=>{
       resultEl.innerText="Bitte gib eine Lösung ein.";return;
     }
     answerEl.blur();
+
     if(normMul(input)===normMul(correctSolution)){
       resultEl.style.color="green";
-      resultEl.innerText="✅ Richtig!";
-      score++;
+      if(firstTry){
+        resultEl.innerText="✅ Richtig! (+1 Punkt)";
+        score++;
+      } else {
+        resultEl.innerText="✅ Richtig – aber kein Punkt mehr (zweiter Versuch)";
+      }
+      firstTry = false; // Punktvergabe erfolgt nur einmal
     } else {
       resultEl.style.color="red";
       resultEl.innerHTML=`❌ Falsch! Richtige Lösung: ${correctSolution}<br><small>${explanations[level]||""}</small>`;
+      firstTry = false; // danach keine Punkte mehr möglich
     }
-    round++;
-    updateProgress();
-    scoreEl.innerText=`Aufgabe ${Math.min(round,totalRounds)} von ${totalRounds} – Punkte: ${score}`;
+
+    // Runde erst nach richtiger Lösung fortsetzen
+    if(normMul(input)===normMul(correctSolution)){
+      round++;
+      updateProgress();
+      scoreEl.innerText=`Aufgabe ${Math.min(round,totalRounds)} von ${totalRounds} – Punkte: ${score}`;
+    }
   }
 
   checkBtn.addEventListener("click",checkAnswer);
