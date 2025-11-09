@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Termtrainer – Multiplikation mit Levelsystem</title>
 <style>
   html, body {
@@ -15,66 +15,42 @@
     text-align: center;
     margin: 0;
     padding: 20px;
-    scroll-behavior: smooth;
   }
-  h1,h2 {
-    color:#333;
-    margin:10px 0;
-    font-size:1.6em;
-    font-weight:600;
-  }
+  h1 { color:#333; margin:10px 0; font-size:1.8em; }
   #task { font-size:1.6em; margin:15px auto; white-space:pre-line; }
   #result { font-size:1.2em; margin:10px; font-weight:bold; }
   #score { font-size:1.1em; margin:8px; color:#333; }
-  #levelDisplay {
-    font-weight: bold;
-    color: #007bff;
-    margin-bottom: 5px;
-  }
+  #levelDisplay { font-weight:bold; color:#007bff; margin-bottom:5px; }
+
   /* Fortschrittsbalken */
   #progressContainer {
-    width: 80%;
-    max-width: 400px;
-    height: 20px;
-    background-color: #ddd;
-    border-radius: 10px;
-    margin: 10px auto 20px;
-    overflow: hidden;
+    width:80%; max-width:400px; height:20px;
+    background-color:#ddd; border-radius:10px;
+    margin:10px auto 20px; overflow:hidden;
   }
   #progressBar {
-    height: 100%;
-    width: 0%;
-    background-color: #4caf50;
-    transition: width 0.3s ease;
+    height:100%; width:0%; background-color:#4caf50;
+    transition:width 0.3s ease;
   }
 
   input {
-    padding:10px;
-    font-size:1.2em;
-    width:80%;
-    max-width:300px;
+    padding:10px; font-size:1.2em;
+    width:80%; max-width:300px;
     text-align:center;
-    border-radius:8px;
-    border:1px solid #aaa;
+    border-radius:8px; border:1px solid #aaa;
   }
   input:focus { outline:none; border-color:#007bff; }
   button {
-    background:#007bff;
-    color:white;
-    border:none;
-    padding:10px 18px;
-    margin:6px;
-    font-size:1em;
-    border-radius:8px;
-    cursor:pointer;
+    background:#007bff; color:white; border:none;
+    padding:10px 18px; margin:6px; font-size:1em;
+    border-radius:8px; cursor:pointer;
   }
   button:hover { background:#0056b3; }
+
   .shortcutButtons { margin-top:8px; }
   .shortcutButtons button {
-    background:#e3e3e3;
-    color:#000;
-    border:1px solid #bbb;
-    padding:6px 10px;
+    background:#e3e3e3; color:#000;
+    border:1px solid #bbb; padding:6px 10px;
     font-size:1.1em;
   }
   .shortcutButtons button:hover { background:#ccc; }
@@ -82,17 +58,22 @@
   @media (max-width:700px){
     .shortcutButtons button{padding:8px 14px;font-size:1.3em;}
   }
+
+  details summary {
+    cursor:pointer; color:#007bff;
+    margin-top:8px; user-select:none;
+  }
+  details summary:hover { text-decoration:underline; }
 </style>
 </head>
 <body>
 <h1>Termtrainer – Multiplikation</h1>
 <div id="levelDisplay">Level 1: Ganze Zahlen</div>
 <div id="score">Lade...</div>
-
-<!-- Fortschrittsbalken -->
 <div id="progressContainer"><div id="progressBar"></div></div>
 
 <div id="task">...</div>
+
 <input type="text" id="answer" placeholder="Deine Lösung" autocomplete="off" spellcheck="false"><br>
 <div class="shortcutButtons">
   <button type="button" onclick="insertSymbol('²')">²</button>
@@ -127,13 +108,12 @@ document.addEventListener("DOMContentLoaded",()=>{
     target.focus();
     const start=target.selectionStart??target.value.length;
     const end=target.selectionEnd??target.value.length;
-    const text=target.value;
-    target.value=text.slice(0,start)+symbol+text.slice(end);
+    target.value=target.value.slice(0,start)+symbol+target.value.slice(end);
     const pos=start+symbol.length;
     requestAnimationFrame(()=>{target.selectionStart=target.selectionEnd=pos;});
   };
 
-  // Zufallshilfen
+  // Zufallsfunktionen
   const COEFFS=[2,3,4,5,6,7,8,9];
   const VARS=['a','b','m','n','p','q','x','y'];
   const randomChoice=a=>a[Math.floor(Math.random()*a.length)];
@@ -142,12 +122,14 @@ document.addEventListener("DOMContentLoaded",()=>{
   const randomVar=()=>randomChoice(VARS);
   const sortVars=(v1,v2)=>[v1,v2].sort().join('');
   const formatCoeff=(n,isVar)=>{if(!isVar)return String(n);if(n===1)return"";if(n===-1)return"-";return String(n);};
-  const normMul=s=>s.replace(/\s+/g,'').replace(/^(\+)?/,'').replace(/²/g,'^2').replace(/−/g,'-').toLowerCase();
+  const normMul=s=>s.replace(/\s+/g,'').replace(/^(\+)?/,'').replace(/²/g,'^2').replace(/³/g,'^3').replace(/−/g,'-').toLowerCase();
 
-  // Levelsystem
+  // Spielvariablen
   let level=1;
   let correctSolution="";
   let round=1,score=0,totalRounds=10;
+  let firstTry=true;
+
   const LEVEL_NAMES=[
     "Level 1: Ganze Zahlen",
     "Level 2: Monome",
@@ -156,42 +138,66 @@ document.addEventListener("DOMContentLoaded",()=>{
     "Level 5: Gemischt"
   ];
 
-  // Aufgabenfunktionen
+  // --- Aufgabenfunktionen ---
+  // Level 1: Ganze Zahlen (2–3 Faktoren)
   function createIntTask(){
-    const a=Math.floor(Math.random()*11)-5;
-    const b=Math.floor(Math.random()*11)-5;
-    correctSolution=String(a*b);
-    return `(${a}) · (${b}) = ?`;
+    const count = Math.random()<0.5?2:3;
+    let nums=[], res=1, txt="";
+    for(let i=0;i<count;i++){
+      const n=Math.floor(Math.random()*11)-5||1;
+      nums.push(n); res*=n;
+    }
+    txt=nums.map(n=>`(${n})`).join(" · ");
+    correctSolution=String(res);
+    return `${txt} = ?`;
   }
+
+  // Level 2: Monome (2–3 Faktoren)
   function createSimpleTask(){
-    const s1=randomSign(),s2=randomSign();
-    const n1=randomCoeff(),n2=randomCoeff();
-    let v1=randomVar(),v2=randomVar();
-    if(Math.random()<0.5)v2=v1; else while(v2===v1)v2=randomVar();
-    const aufgabe=`(${s1}${n1}${v1}) · (${s2}${n2}${v2}) = ?`;
-    const sign=(s1===s2)?'+':'-';
-    let coeff=(sign==='-')?-n1*n2:n1*n2;
-    correctSolution=(v1===v2)?
-      `${formatCoeff(coeff,true)}${v1}²`:
-      `${formatCoeff(coeff,true)}${sortVars(v1,v2)}`;
-    return aufgabe;
+    const count=Math.random()<0.5?2:3;
+    let coeff=1,vars=[],sign=1,text="";
+    for(let i=0;i<count;i++){
+      const s=randomSign()==='-'?-1:1;
+      const n=randomCoeff();
+      const v=randomVar();
+      coeff*=s*n;
+      vars.push(v);
+      text += `(${s===-1?'-':''}${n}${v}) · `;
+    }
+    text=text.slice(0,-3);
+    vars.sort();
+    const varCount={};
+    for(const v of vars)varCount[v]=(varCount[v]||0)+1;
+    let varsPart="";
+    for(const [v,exp] of Object.entries(varCount)){
+      varsPart+=v+(exp>1?(exp===2?'²':'³'):'');
+    }
+    correctSolution=`${formatCoeff(coeff,true)}${varsPart}`;
+    return `${text} = ?`;
   }
+
+  // Level 3: Monom · Binom (abwechslungsreicher, max Hoch ³)
   function createMonomBinom(){
-    const coeff=randomCoeff();
-    const v=randomVar();
-    const b1=randomCoeff();
-    const s1=randomSign();
-    const b=s1==='+'?b1:-b1;
-    correctSolution=`${formatCoeff(coeff,true)}${v}² ${b>=0?'+':'-'} ${Math.abs(coeff*b)}${v}`;
-    return `${coeff}${v} · (${v} ${s1} ${Math.abs(b1)}) = ?`;
+    const coeff=randomCoeff()*(Math.random()<0.5?-1:1);
+    const v1=randomVar();
+    const exp1=Math.floor(Math.random()*3)+1;
+    const monom=`${formatCoeff(coeff,true)}${v1}${exp1>1?(exp1===2?'²':'³'):''}`;
+    const v2=randomVar();
+    const b1=randomCoeff()*(Math.random()<0.5?-1:1);
+    const b2=randomCoeff()*(Math.random()<0.5?-1:1);
+    const binom=`(${b1>=0?'+':''}${b1}${v2} ${b2>=0?'+':'-'} ${Math.abs(b2)})`;
+
+    // Lösung: Monom verteilen
+    const term1=`${coeff*b1}${v1}${exp1>0?(exp1===1?'':exp1===2?'²':'³'):''}${v2}`;
+    const term2=`${coeff*b2}${v1}${exp1>0?(exp1===1?'':exp1===2?'²':'³'):''}`;
+    correctSolution=`${term1.startsWith('-')?'':'+'}${term1} ${term2.startsWith('-')?'':'+'} ${term2}`.replace(/\+\s*-/g,'- ').replace(/^\+\s*/,'');
+    return `${monom} · ${binom} = ?`;
   }
+
   function createGeneralBinom(){
     let v1=randomVar(),v2=randomVar();
     if(Math.random()<0.5)v2=v1;
-    const a1=randomCoeff();
-    let a2=randomCoeff();
-    if(Math.random()<0.5)a2=a1;
-    const b=randomCoeff(),c=randomCoeff();
+    const a1=randomCoeff(),a2=randomCoeff(),b=randomCoeff(),c=randomCoeff();
     const s1=randomSign(),s2=randomSign();
     const sb=s1==='+'?1:-1,sc=s2==='+'?1:-1;
     const sameVar=v1===v2;
@@ -216,91 +222,97 @@ document.addEventListener("DOMContentLoaded",()=>{
     correctSolution=sol;
     return `(${a1}${v1} ${s1} ${b}) · (${a2}${v2} ${s2} ${c}) = ?`;
   }
+
   function createPlusMinusBinom(){
     const v=randomVar(),a=randomCoeff(),b=randomCoeff();
     correctSolution=`${formatCoeff(a*a,true)}${v}² - ${b*b}`;
     return `(${a}${v} + ${b}) · (${a}${v} - ${b}) = ?`;
   }
 
+  // --- ausführliche Lösungswege ---
   const explanations={
-    1:"Multipliziere einfach die beiden Zahlen.\nBeispiel: (−3)·(−2)=+6, da Minus mal Minus Plus ergibt.",
-    2:"Multipliziere die Vorzeichen und Zahlen, hänge die Variablen aneinander.\nBeispiel: (−3x)·(2y)=−6xy.",
-    3:"Verteile das Monom auf beide Glieder des Binoms: a(b+c)=ab+ac.",
-    4:"Multipliziere jeden Term der ersten Klammer mit jedem Term der zweiten:\n(a+b)(c+d)=ac+ad+bc+bd."
+    1:{
+      title:"🧩 So multiplizierst du ganze Zahlen:",
+      steps:[
+        "1️⃣ Bestimme das Vorzeichen: gleiche Vorzeichen → +, verschiedene Vorzeichen → −",
+        "2️⃣ Multipliziere die Beträge (ohne Vorzeichen).",
+        "3️⃣ Setze das richtige Vorzeichen davor."
+      ],
+      example:"(−3) · (−2) = +6"
+    },
+    2:{
+      title:"🧩 So multiplizierst du Monome:",
+      steps:[
+        "1️⃣ Multipliziere die Zahlen (Koeffizienten).",
+        "2️⃣ Bestimme das Vorzeichen: gleiche Vorzeichen → +, verschiedene Vorzeichen → −",
+        "3️⃣ Hänge die Variablen aneinander.",
+        "4️⃣ Gleiche Variablen → Exponenten addieren."
+      ],
+      example:"(−3x) · (2x) = −6x²"
+    },
+    3:{
+      title:"🧩 So multiplizierst du ein Monom mit einem Binom:",
+      steps:[
+        "1️⃣ Verteile das Monom auf beide Glieder der Klammer (Distributivgesetz).",
+        "2️⃣ Multipliziere jeden Term einzeln.",
+        "3️⃣ Fasse die Ergebnisse zusammen."
+      ],
+      example:"3x · (x + 2) = 3x² + 6x"
+    },
+    4:{
+      title:"🧩 So multiplizierst du zwei Binome:",
+      steps:[
+        "1️⃣ Multipliziere jeden Term der ersten Klammer mit jedem der zweiten.",
+        "2️⃣ Fasse gleiche Terme zusammen.",
+        "3️⃣ Achte auf die Vorzeichen!"
+      ],
+      example:"(x + 2)(x + 3) = x² + 5x + 6"
+    },
+    5:{
+      title:"🧩 Gemischte Aufgaben:",
+      steps:[
+        "1️⃣ Überlege, welche Regel passt (Zahl, Monom, Binom …).",
+        "2️⃣ Wende das passende Verfahren an.",
+        "3️⃣ Prüfe Vorzeichen und gleiche Variablen."
+      ],
+      example:"(2x + 1)(x − 4) = 2x² − 7x − 4"
+    }
   };
 
+  // Levelwechsel + Fortschritt
   function nextLevel(){
     if(level<4 && score>=8){
-      level++;
-      alert(`🎯 Level geschafft! ${LEVEL_NAMES[level-1]} beginnt jetzt.`);
+      level++; alert(`🎯 Level geschafft! ${LEVEL_NAMES[level-1]} beginnt jetzt.`);
       round=1;score=0;
     } else if(level===4 && score>=8){
-      level=5;
-      alert("🏆 Super! Du hast alle Level geschafft. Jetzt kommen gemischte Aufgaben!");
+      level=5; alert("🏆 Super! Du hast alle Level geschafft. Jetzt kommen gemischte Aufgaben!");
       round=1;score=0;
     }
   }
-
   function updateProgress(){
     const percent=((round-1)/totalRounds)*100;
     progressBar.style.width=percent+"%";
   }
 
   function newTask(){
-    resultEl.innerText="";
-    answerEl.value="";
-    updateProgress();
-    levelDisplay.innerText=LEVEL_NAMES[level-1];
+    resultEl.innerText="";answerEl.value="";firstTry=true;
+    updateProgress();levelDisplay.innerText=LEVEL_NAMES[level-1];
     if(round>totalRounds){
       taskEl.innerText="🎉 Level fertig!";
       resultEl.style.color="green";
       resultEl.innerText=`Endstand: ${score}/${totalRounds} Punkte.`;
       newBtn.textContent="Weiter";
-      nextLevel();
-      updateProgress();
-      return;
+      nextLevel();updateProgress();return;
     }
     let aufgabe;
     switch(level){
-      case 1: aufgabe=createIntTask(); break;
-      case 2: aufgabe=createSimpleTask(); break;
-      case 3: aufgabe=createMonomBinom(); break;
-      case 4: aufgabe=Math.random()<0.5?createGeneralBinom():createPlusMinusBinom(); break;
+      case 1:aufgabe=createIntTask();break;
+      case 2:aufgabe=createSimpleTask();break;
+      case 3:aufgabe=createMonomBinom();break;
+      case 4:aufgabe=Math.random()<0.5?createGeneralBinom():createPlusMinusBinom();break;
       case 5:{
         const funcs=[createIntTask,createSimpleTask,createMonomBinom,createGeneralBinom,createPlusMinusBinom];
-        aufgabe=randomChoice(funcs)(); break;
-      }
-    }
-    taskEl.innerText=`${LEVEL_NAMES[level-1]}\n${aufgabe}`;
-    scoreEl.innerText=`Aufgabe ${round} von ${totalRounds} – Punkte: ${score}`;
-  }
-
-   let firstTry = true; // NEU: merkt, ob erste Eingabe noch unversucht ist
-
-  function newTask(){
-    resultEl.innerText="";
-    answerEl.value="";
-    firstTry = true; // bei neuer Aufgabe wieder auf "erster Versuch" setzen
-    updateProgress();
-    levelDisplay.innerText=LEVEL_NAMES[level-1];
-    if(round>totalRounds){
-      taskEl.innerText="🎉 Level fertig!";
-      resultEl.style.color="green";
-      resultEl.innerText=`Endstand: ${score}/${totalRounds} Punkte.`;
-      newBtn.textContent="Weiter";
-      nextLevel();
-      updateProgress();
-      return;
-    }
-    let aufgabe;
-    switch(level){
-      case 1: aufgabe=createIntTask(); break;
-      case 2: aufgabe=createSimpleTask(); break;
-      case 3: aufgabe=createMonomBinom(); break;
-      case 4: aufgabe=Math.random()<0.5?createGeneralBinom():createPlusMinusBinom(); break;
-      case 5:{
-        const funcs=[createIntTask,createSimpleTask,createMonomBinom,createGeneralBinom,createPlusMinusBinom];
-        aufgabe=randomChoice(funcs)(); break;
+        aufgabe=randomChoice(funcs)();break;
       }
     }
     taskEl.innerText=`${LEVEL_NAMES[level-1]}\n${aufgabe}`;
@@ -309,40 +321,35 @@ document.addEventListener("DOMContentLoaded",()=>{
 
   function checkAnswer(){
     const input=answerEl.value.trim();
-    if(!input){
-      resultEl.style.color="gray";
-      resultEl.innerText="Bitte gib eine Lösung ein.";return;
-    }
+    if(!input){resultEl.style.color="gray";resultEl.innerText="Bitte gib eine Lösung ein.";return;}
     answerEl.blur();
 
     if(normMul(input)===normMul(correctSolution)){
       resultEl.style.color="green";
-      if(firstTry){
-        resultEl.innerText="✅ Richtig! (+1 Punkt)";
-        score++;
-      } else {
-        resultEl.innerText="✅ Richtig – aber kein Punkt mehr (zweiter Versuch)";
-      }
-      firstTry = false; // Punktvergabe erfolgt nur einmal
-    } else {
-      resultEl.style.color="red";
-      resultEl.innerHTML=`❌ Falsch! Richtige Lösung: ${correctSolution}<br><small>${explanations[level]||""}</small>`;
-      firstTry = false; // danach keine Punkte mehr möglich
-    }
-
-    // Runde erst nach richtiger Lösung fortsetzen
-    if(normMul(input)===normMul(correctSolution)){
-      round++;
-      updateProgress();
+      if(firstTry){resultEl.innerText="✅ Richtig! (+1 Punkt)";score++;} 
+      else {resultEl.innerText="✅ Richtig – aber kein Punkt mehr (zweiter Versuch)";}
+      firstTry=false;
+      round++;updateProgress();
       scoreEl.innerText=`Aufgabe ${Math.min(round,totalRounds)} von ${totalRounds} – Punkte: ${score}`;
+    } else {
+      const exp=explanations[level];
+      resultEl.style.color="red";
+      let html=`❌ Falsch! Richtige Lösung: <b>${correctSolution}</b><br>`;
+      if(exp){
+        html+=`<details><summary>🧩 Lösungsweg anzeigen</summary><b>${exp.title}</b><br>`;
+        html+=exp.steps.map(s=>`<div style="text-align:left;max-width:420px;margin:6px auto;">${s}</div>`).join("");
+        html+=`<div style="margin-top:8px;color:#007bff;"><b>Beispiel:</b> ${exp.example}</div></details>`;
+      }
+      resultEl.innerHTML=html;
+      firstTry=false;
     }
   }
 
   checkBtn.addEventListener("click",checkAnswer);
   newBtn.addEventListener("click",newTask);
   answerEl.addEventListener("keydown",e=>{if(e.key==="Enter")checkAnswer();});
-
   newTask();
+
 });
 </script>
 </body>
