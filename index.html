@@ -229,12 +229,12 @@ document.addEventListener("DOMContentLoaded",()=>{
     return `(${a}${v} + ${b}) · (${a}${v} - ${b}) = ?`;
   }
 
-// --- Kurz & übersichtlich: neue Lösungswege ---
+// --- Minimalistische, klare Lösungswege ---
   const explanations = {
     1: {
       title: "🧩 Ganze Zahlen",
       steps: [
-        "<b style='color:#007bff;'>1.</b> Vorzeichen bestimmen: gleiche → <b style='color:green;'>+</b>, verschiedene → <b style='color:red;'>−</b>",
+        "<b style='color:#007bff;'>1.</b> Vorzeichen bestimmen:<br>gleiche Vorzeichen → <b style='color:green;'>+</b><br>verschiedene Vorzeichen → <b style='color:red;'>−</b>",
         "<b style='color:#007bff;'>2.</b> Zahlen multiplizieren"
       ],
       example: "(−3) · (−2) = +6"
@@ -242,16 +242,15 @@ document.addEventListener("DOMContentLoaded",()=>{
     2: {
       title: "🧩 Monome",
       steps: [
-        "<b style='color:#007bff;'>1.</b> Vorzeichen bestimmen: gleiche → <b style='color:green;'>+</b>, verschiedene → <b style='color:red;'>−</b>",
-        "<b style='color:#007bff;'>2.</b> Zahlen multiplizieren",
-        "<b style='color:#007bff;'>3.</b> Variablen anhängen und gleiche addieren (z. B. x·x = x²)"
+        "<b style='color:#007bff;'>1.</b> Vorzeichen bestimmen:<br>gleiche Vorzeichen → <b style='color:green;'>+</b><br>verschiedene Vorzeichen → <b style='color:red;'>−</b>",
+        "<b style='color:#007bff;'>2.</b> Zahlen multiplizieren und Variablen anhängen (z. B. x·x = x²)"
       ],
       example: "(−3x) · (2x) = −6x²"
     },
     3: {
       title: "🧩 Monom · Binom",
       steps: [
-        "<b style='color:#007bff;'>1.</b> Vorzeichen beachten (wie oben)",
+        "<b style='color:#007bff;'>1.</b> Vorzeichen beachten:<br>gleiche → <b style='color:green;'>+</b><br>verschiedene → <b style='color:red;'>−</b>",
         "<b style='color:#007bff;'>2.</b> Monom mit jedem Glied der Klammer multiplizieren"
       ],
       example: "3x · (x + 2) = 3x² + 6x"
@@ -259,7 +258,7 @@ document.addEventListener("DOMContentLoaded",()=>{
     4: {
       title: "🧩 Binom · Binom",
       steps: [
-        "<b style='color:#007bff;'>1.</b> Vorzeichen beachten",
+        "<b style='color:#007bff;'>1.</b> Vorzeichen beachten:<br>gleiche → <b style='color:green;'>+</b><br>verschiedene → <b style='color:red;'>−</b>",
         "<b style='color:#007bff;'>2.</b> Jeden Term der ersten Klammer mit jedem der zweiten multiplizieren"
       ],
       example: "(x + 2)(x + 3) = x² + 5x + 6"
@@ -267,12 +266,13 @@ document.addEventListener("DOMContentLoaded",()=>{
     5: {
       title: "🧩 Gemischte Aufgaben",
       steps: [
-        "<b style='color:#007bff;'>1.</b> Erkennen, welche Regel passt",
+        "<b style='color:#007bff;'>1.</b> Erkennen, welche Regel passt:<br>gleiche → <b style='color:green;'>+</b><br>verschiedene → <b style='color:red;'>−</b>",
         "<b style='color:#007bff;'>2.</b> Passendes Verfahren anwenden"
       ],
       example: "(2x + 1)(x − 4) = 2x² − 7x − 4"
     }
   };
+
 
 
   // Levelwechsel + Fortschritt
@@ -315,18 +315,26 @@ document.addEventListener("DOMContentLoaded",()=>{
     scoreEl.innerText=`Aufgabe ${round} von ${totalRounds} – Punkte: ${score}`;
   }
 
- // --- Fehlerausgabe mit neuem Layout ---
-  function checkAnswer(){
+function checkAnswer(){
     const input=answerEl.value.trim();
-    if(!input){resultEl.style.color="gray";resultEl.innerText="Bitte gib eine Lösung ein.";return;}
+    if(!input){
+      resultEl.style.color="gray";
+      resultEl.innerText="Bitte gib eine Lösung ein.";
+      return;
+    }
     answerEl.blur();
 
     if(normMul(input)===normMul(correctSolution)){
       resultEl.style.color="green";
-      if(firstTry){resultEl.innerText="✅ Richtig! (+1 Punkt)";score++;}
-      else{resultEl.innerText="✅ Richtig – aber kein Punkt mehr (zweiter Versuch)";}
+      if(firstTry){
+        resultEl.innerText="✅ Richtig! (+1 Punkt)";
+        score++;
+      } else {
+        resultEl.innerText="✅ Richtig – aber kein Punkt mehr (zweiter Versuch)";
+      }
       firstTry=false;
-      round++;updateProgress();
+      round++;
+      updateProgress();
       scoreEl.innerText=`Aufgabe ${Math.min(round,totalRounds)} von ${totalRounds} – Punkte: ${score}`;
     } else {
       const exp=explanations[level];
@@ -335,7 +343,9 @@ document.addEventListener("DOMContentLoaded",()=>{
       if(exp){
         html+=`<details open><summary style="color:#007bff;cursor:pointer;">🧩 Lösungsweg anzeigen</summary>`;
         html+=`<b>${exp.title}</b><br>`;
-        html+=exp.steps.map(s=>`<div style="text-align:left;max-width:420px;margin:4px auto;">${s}</div>`).join("");
+        html+=exp.steps
+          .map(s=>`<div style="text-align:left;max-width:420px;margin:4px auto;">${s}</div>`)
+          .join("");
         html+=`<div style="margin-top:6px;color:#007bff;"><b>Beispiel:</b> ${exp.example}</div></details>`;
       }
       resultEl.innerHTML=html;
