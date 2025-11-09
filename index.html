@@ -172,14 +172,39 @@ document.addEventListener("DOMContentLoaded", () => {
     return `(${a}${v} + ${b}) · (${a}${v} - ${b}) = ?`;
   }
 
-  // --- Lösungswege (schlicht, schwarz) ---
+  // --- Lösungswege (ohne Kapitel, mit fetten Schrittzahlen) ---
   const explanations = {
-    1:{title:"Ganze Zahlen",steps:["1. Vorzeichen bestimmen:","   gleiche Vorzeichen → +","   verschiedene Vorzeichen → −","2. Zahlen multiplizieren"],example:"(−3) · (−2) = +6"},
-    2:{title:"Monome",steps:["1. Vorzeichen bestimmen:","   gleiche Vorzeichen → +","   verschiedene Vorzeichen → −","2. Zahlen multiplizieren und Variablen anhängen (x·x = x²)"],example:"(−3x) · (2x) = −6x²"},
-    3:{title:"Monom · Binom",steps:["1. Vorzeichen beachten:","   gleiche → +","   verschiedene → −","2. Monom mit jedem Glied der Klammer multiplizieren"],example:"3x · (x + 2) = 3x² + 6x"},
-    4:{title:"Binom · Binom",steps:["1. Vorzeichen beachten:","   gleiche → +","   verschiedene → −","2. Jeden Term der ersten Klammer mit jedem der zweiten multiplizieren"],example:"(x + 2)(x + 3) = x² + 5x + 6"},
-    5:{title:"Gemischte Aufgaben",steps:["1. Erkennen, welche Regel passt:","   gleiche → +","   verschiedene → −","2. Passendes Verfahren anwenden"],example:"(2x + 1)(x − 4) = 2x² − 7x − 4"}
+    1:{steps:["<b>1.</b> Vorzeichen bestimmen:","   gleiche Vorzeichen → +","   verschiedene Vorzeichen → −","<b>2.</b> Zahlen multiplizieren"],example:"(−3) · (−2) = +6"},
+    2:{steps:["<b>1.</b> Vorzeichen bestimmen:","   gleiche Vorzeichen → +","   verschiedene Vorzeichen → −","<b>2.</b> Zahlen multiplizieren und Variablen anhängen (x·x = x²)"],example:"(−3x) · (2x) = −6x²"},
+    3:{steps:["<b>1.</b> Vorzeichen beachten:","   gleiche → +","   verschiedene → −","<b>2.</b> Monom mit jedem Glied der Klammer multiplizieren"],example:"3x · (x + 2) = 3x² + 6x"},
+    4:{steps:["<b>1.</b> Vorzeichen beachten:","   gleiche → +","   verschiedene → −","<b>2.</b> Jeden Term der ersten Klammer mit jedem der zweiten multiplizieren"],example:"(x + 2)(x + 3) = x² + 5x + 6"},
+    5:{steps:["<b>1.</b> Erkennen, welche Regel passt:","   gleiche → +","   verschiedene → −","<b>2.</b> Passendes Verfahren anwenden"],example:"(2x + 1)(x − 4) = 2x² − 7x − 4"}
   };
+
+  function checkAnswer(){
+    const input=answerEl.value.trim();
+    if(!input){resultEl.style.color="#555";resultEl.innerText="Bitte gib eine Lösung ein.";return;}
+    answerEl.blur();
+
+    if(normMul(input)===normMul(correctSolution)){
+      resultEl.style.color="green";
+      if(firstTry){resultEl.innerText="✅ Richtig! (+1 Punkt)";score++;}
+      else{resultEl.innerText="✅ Richtig – aber kein Punkt mehr";}
+      firstTry=false;round++;updateProgress();
+      scoreEl.innerText=`Aufgabe ${Math.min(round,totalRounds)} von ${totalRounds} – Punkte: ${score}`;
+    }else{
+      const exp=explanations[level];
+      let html=`<span style="color:#d00;">❌ Falsch!</span> Richtige Lösung: <b>${correctSolution}</b><br>`;
+      if(exp){
+        html+=`<details open><summary style="color:#007bff;cursor:pointer;">🧩 Lösungsweg anzeigen</summary>`;
+        html+=`<div style="text-align:left;max-width:420px;margin:6px auto;font-size:0.95em;line-height:1.4;color:#000;">`;
+        html+=exp.steps.map(s=>`<div>${s}</div>`).join("");
+        html+=`<div style="margin-top:6px;font-style:italic;">Beispiel: ${exp.example}</div></div></details>`;
+      }
+      resultEl.innerHTML=html;firstTry=false;
+    }
+  }
+
 
   function updateProgress(){ progressBar.style.width = ((round-1)/totalRounds*100) + "%"; }
 
@@ -192,7 +217,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function newTask(){
     resultEl.innerText="";answerEl.value="";firstTry=true;
-    levelDisplay.innerText=LEVEL_NAMES[level-1];
+    levelDisplay.innerText=aufgabe;
     if(round>totalRounds){
       resultEl.style.color="green";
       resultEl.innerHTML=`🎉 Level fertig!<br>Endstand: ${score}/${totalRounds}`;
