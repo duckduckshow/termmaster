@@ -24,7 +24,7 @@
   }
   #progressBar {
     height:100%; width:0%; background-color:#4caf50;
-    transition:width 0.3s ease;
+    transition:width 0.3s ease, background-color 0.3s ease;
   }
   input {
     padding:10px; font-size:1.2em; width:80%; max-width:300px;
@@ -74,9 +74,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const randomSign=()=>Math.random()<0.5?'-':'+';
   const randomCoeff=()=>randomChoice(COEFFS);
   const randomVar=()=>randomChoice(VARS);
-  const sortVars=(v1,v2)=>[v1,v2].sort().join('');
   const formatCoeff=(n,isVar)=>{if(!isVar)return String(n);if(n===1)return"";if(n===-1)return"-";return String(n);};
   const normMul=s=>s.replace(/\s+/g,'').replace(/^(\+)?/,'').replace(/²/g,'^2').replace(/³/g,'^3').replace(/−/g,'-').toLowerCase();
+
+  // Alphabetische Sortierung der Variablen (mit Exponenten)
+  function sortVars(term) {
+    const parts = [...term.matchAll(/([a-z])(\^?\d?|[²³]?)/g)].map(m => [m[1], m[2] || ""]);
+    parts.sort((a,b) => a[0].localeCompare(b[0]));
+    return parts.map(p => p.join("")).join("");
+  }
 
   let level=1, correctSolution="", round=1, score=0, totalRounds=10, firstTry=true;
 
@@ -93,18 +99,17 @@ document.addEventListener("DOMContentLoaded", () => {
     const count=Math.random()<0.5?2:3;
     let nums=[], res=1;
     for(let i=0;i<count;i++){
-      const max = (count===3)?5:9;
+      const max=(count===3)?5:9;
       let n=Math.floor(Math.random()*(max*2+1))-max;
-      if(n===0) n=1;
+      if(n===0)n=1;
       nums.push(n); res*=n;
     }
     correctSolution=String(res);
-    // ¾ der Fälle mit (+n), sonst ohne
     return nums.map(n=>{
       const plusForm=Math.random()<0.75;
-      if(n>0 && plusForm) return `(+${n})`;
-      if(n<0) return `(${n})`;
-      return `${n}`;
+      if(n>0 && plusForm)return`(+${n})`;
+      if(n<0)return`(${n})`;
+      return`${n}`;
     }).join(" · ")+" = ?";
   }
 
@@ -114,12 +119,12 @@ document.addEventListener("DOMContentLoaded", () => {
     let text="";
     for(let i=0;i<count;i++){
       const s=randomSign()==='-'?-1:1;
-      const max = (count===3)?3:9;
-      const n=randomChoice([...Array(max).keys()].map(x=>x+1)); // 1..max
-      const hasVar=(count===3)?(Math.random()<0.66):(true);
+      const max=(count===3)?3:9;
+      const n=randomChoice([...Array(max).keys()].map(x=>x+1));
+      const hasVar=(count===3)?(Math.random()<0.66):true;
       const v=hasVar?randomVar():"";
       coeff*=s*n;
-      if(hasVar) vars.push(v);
+      if(hasVar)vars.push(v);
       const plusForm=(n>0 && Math.random()<0.75);
       const inner=(plusForm && s===1)?`(+${n}${v})`:`(${s===-1?'-':''}${n}${v})`;
       text+=inner+" · ";
@@ -131,6 +136,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let varsPart="";
     for(const [v,exp] of Object.entries(varCount))
       varsPart+=v+(exp>1?(exp===2?'²':'³'):'');
+    varsPart=sortVars(varsPart);
     correctSolution=`${formatCoeff(coeff,true)}${varsPart}`;
     return `${text} = ?`;
   }
@@ -144,8 +150,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const b1=randomCoeff()*(Math.random()<0.5?-1:1);
     const b2=randomCoeff()*(Math.random()<0.5?-1:1);
     const binom=`(${b1>=0?'+':''}${b1}${v2} ${b2>=0?'+':'-'} ${Math.abs(b2)})`;
-    const term1=`${coeff*b1}${v1}${exp1>1?(exp1===2?'²':'³'):''}${v2}`;
-    const term2=`${coeff*b2}${v1}${exp1>1?(exp1===2?'²':'³'):''}`;
+    const expPart=exp1>1?(exp1===2?'²':'³'):'';
+    let vars1=sortVars(v1+expPart+v2);
+    let vars2=sortVars(v1+expPart);
+    const term1=`${coeff*b1}${vars1}`;
+    const term2=`${coeff*b2}${vars2}`;
     correctSolution=`${term1.startsWith('-')?'':'+'}${term1} ${term2.startsWith('-')?'':'+'} ${term2}`.replace(/\+\s*-/g,'- ').replace(/^\+\s*/,'');
     return `${monom} · ${binom} = ?`;
   }
@@ -166,15 +175,16 @@ document.addEventListener("DOMContentLoaded", () => {
       if(xCoeff>0)sol+=` + ${formatCoeff(xCoeff,true)}${v1}`;
       else if(xCoeff<0)sol+=` - ${formatCoeff(Math.abs(xCoeff),true)}${v1}`;
       if(bc>0)sol+=` + ${bc}`; else if(bc<0)sol+=` - ${Math.abs(bc)}`;
-    } else {
+    }else{
       const a1a2=a1*a2,ab=a1*sc*c,ac=a2*sb*b,bc=sb*sc*b*c;
-      sol=`${formatCoeff(a1a2,true)}${sortVars(v1,v2)}`;
-      if(ab>0)sol+=` + ${formatCoeff(ab,true)}${v1}`;
-      else if(ab<0)sol+=` - ${formatCoeff(Math.abs(ab),true)}${v1}`;
-      if(ac>0)sol+=` + ${formatCoeff(ac,true)}${v2}`;
-      else if(ac<0)sol+=` - ${formatCoeff(Math.abs(ac),true)}${v2}`;
+      sol=`${formatCoeff(a1a2,true)}${sortVars(v1+v2)}`;
+      if(ab>0)sol+=` + ${formatCoeff(ab,true)}${sortVars(v1)}`;
+      else if(ab<0)sol+=` - ${formatCoeff(Math.abs(ab),true)}${sortVars(v1)}`;
+      if(ac>0)sol+=` + ${formatCoeff(ac,true)}${sortVars(v2)}`;
+      else if(ac<0)sol+=` - ${formatCoeff(Math.abs(ac),true)}${sortVars(v2)}`;
       if(bc>0)sol+=` + ${bc}`; else if(bc<0)sol+=` - ${Math.abs(bc)}`;
     }
+    sol=sol.replace(/([a-z]{2,})/g,m=>sortVars(m));
     correctSolution=sol;
     return `(${a1}${v1} ${s1} ${b}) · (${a2}${v2} ${s2} ${c}) = ?`;
   }
@@ -226,9 +236,10 @@ document.addEventListener("DOMContentLoaded", () => {
       ],example:"(2x + 1)(x − 4) = 2x² − 7x − 4"}
   };
 
-
-  // ---------- Fortschritt, Level & Anzeige ----------
-  function updateProgress(){ progressBar.style.width=((round-1)/totalRounds*100)+"%"; }
+  // ---------- Fortschritt ----------
+  function updateProgress(){
+    progressBar.style.width=((round-1)/totalRounds*100)+"%";
+  }
 
   function nextLevel(){
     if(score>=8 && level<4){level++;alert(`🎯 Level ${level-1} geschafft! Weiter mit ${LEVEL_NAMES[level-1]}.`);}
@@ -256,6 +267,7 @@ document.addEventListener("DOMContentLoaded", () => {
     taskEl.innerText=aufgabe;
     scoreEl.innerText=`Aufgabe ${round} von ${totalRounds} – Punkte: ${score}`;
     updateProgress();
+    progressBar.style.backgroundColor="#4caf50";
   }
 
   function checkAnswer(){
@@ -263,12 +275,14 @@ document.addEventListener("DOMContentLoaded", () => {
     if(!input){resultEl.style.color="#555";resultEl.innerText="Bitte gib eine Lösung ein.";return;}
     answerEl.blur();
     if(normMul(input)===normMul(correctSolution)){
+      progressBar.style.backgroundColor="#4caf50";
       resultEl.style.color="green";
       if(firstTry){resultEl.innerText="✅ Richtig! (+1 Punkt)";score++;}
       else{resultEl.innerText="✅ Richtig – aber kein Punkt mehr";}
       firstTry=false;round++;updateProgress();
       scoreEl.innerText=`Aufgabe ${Math.min(round,totalRounds)} von ${totalRounds} – Punkte: ${score}`;
     }else{
+      progressBar.style.backgroundColor="#d9534f";
       const exp=explanations[level];
       let html=`<span style="color:#d00;">❌ Falsch!</span> Richtige Lösung: <b>${correctSolution}</b><br>`;
       if(exp){
