@@ -86,12 +86,14 @@ document.addEventListener("DOMContentLoaded", () => {
     return parts.map(p => p.join("")).join("");
   }
 
-  let level=1, correctSolution="", round=1, score=0, totalRounds=10, firstTry=true;
+  let level=1, correctSolution="", round=1, score=0, totalRounds=10;
+  let firstTry=true, answered=false;
   const segments=[];
 
   // Fortschrittsbalken initialisieren
   function initProgressBar(){
     progressContainer.innerHTML="";
+    segments.length=0;
     for(let i=0;i<totalRounds;i++){
       const seg=document.createElement("div");
       seg.className="progress-segment";
@@ -109,7 +111,7 @@ document.addEventListener("DOMContentLoaded", () => {
     "Level 5: Gemischt"
   ];
 
-  // Aufgaben
+  // Aufgabenfunktionen (unverändert)
   function createIntTask(){
     const count=Math.random()<0.5?2:3;
     let nums=[], res=1;
@@ -212,43 +214,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Lösungswege
   const explanations = {
-    1:{steps:[
-        "<b>1. Vorzeichen bestimmen:</b>",
-        "   gleiche Vorzeichen → +",
-        "   verschiedene Vorzeichen → −",
-        "<b>2. Zahlen multiplizieren</b>"
-      ],
-      example:`(−3) · (−2) = +6<br>
-<b>Beispiel mit 3 Faktoren:</b><br>
-(−2) · (−4) · (3)<br>
-= (+8) · (3)<br>
-= +24`
-    },
-    2:{steps:[
-        "<b>1. Vorzeichen bestimmen:</b>",
-        "   gleiche Vorzeichen → +",
-        "   verschiedene Vorzeichen → −",
-        "<b>2. Zahlen multiplizieren</b>",
-        "<b>3. Variablen anhängen (x·x = x²)</b>"
-      ],example:"(−3x) · (2x) = −6x²"},
-    3:{steps:[
-        "<b>1. Vorzeichen beachten:</b>",
-        "   gleiche → +",
-        "   verschiedene → −",
-        "<b>2. Monom mit jedem Glied der Klammer multiplizieren</b>"
-      ],example:"3x · (x + 2) = 3x² + 6x"},
-    4:{steps:[
-        "<b>1. Vorzeichen beachten:</b>",
-        "   gleiche → +",
-        "   verschiedene → −",
-        "<b>2. Jeden Term der ersten Klammer mit jedem der zweiten multiplizieren</b>"
-      ],example:"(x + 2)(x + 3) = x² + 5x + 6"},
-    5:{steps:[
-        "<b>1. Erkennen, welche Regel passt:</b>",
-        "   gleiche → +",
-        "   verschiedene → −",
-        "<b>2. Passendes Verfahren anwenden</b>"
-      ],example:"(2x + 1)(x − 4) = 2x² − 7x − 4"}
+    1:{steps:["<b>1. Vorzeichen bestimmen:</b>","   gleiche Vorzeichen → +","   verschiedene Vorzeichen → −","<b>2. Zahlen multiplizieren</b>"],
+      example:`(−3) · (−2) = +6<br><b>Beispiel mit 3 Faktoren:</b><br>(−2) · (−4) · (3)<br>= (+8) · (3)<br>= +24`},
+    2:{steps:["<b>1. Vorzeichen bestimmen:</b>","   gleiche Vorzeichen → +","   verschiedene Vorzeichen → −","<b>2. Zahlen multiplizieren</b>","<b>3. Variablen anhängen (x·x = x²)</b>"],
+      example:"(−3x) · (2x) = −6x²"},
+    3:{steps:["<b>1. Vorzeichen beachten:</b>","   gleiche → +","   verschiedene → −","<b>2. Monom mit jedem Glied der Klammer multiplizieren</b>"],
+      example:"3x · (x + 2) = 3x² + 6x"},
+    4:{steps:["<b>1. Vorzeichen beachten:</b>","   gleiche → +","   verschiedene → −","<b>2. Jeden Term der ersten Klammer mit jedem der zweiten multiplizieren</b>"],
+      example:"(x + 2)(x + 3) = x² + 5x + 6"},
+    5:{steps:["<b>1. Erkennen, welche Regel passt:</b>","   gleiche → +","   verschiedene → −","<b>2. Passendes Verfahren anwenden</b>"],
+      example:"(2x + 1)(x − 4) = 2x² − 7x − 4"}
   };
 
   function nextLevel(){
@@ -259,7 +234,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function newTask(){
-    resultEl.innerText="";answerEl.value="";firstTry=true;
+    resultEl.innerText="";answerEl.value="";firstTry=true;answered=false;
     levelDisplay.innerText=LEVEL_NAMES[level-1];
     if(round>totalRounds){
       resultEl.style.color="green";
@@ -283,13 +258,27 @@ document.addEventListener("DOMContentLoaded", () => {
     if(!input){resultEl.style.color="#555";resultEl.innerText="Bitte gib eine Lösung ein.";return;}
     answerEl.blur();
 
+    if(answered){  // schon beantwortet → kein neuer Balken
+      if(normMul(input)===normMul(correctSolution)){
+        resultEl.style.color="green";
+        resultEl.innerText="✅ Richtig – aber kein Punkt mehr";
+      }else{
+        resultEl.style.color="#000";
+        resultEl.innerHTML=`❌ Falsch! Richtige Lösung: <b>${correctSolution}</b>`;
+      }
+      return;
+    }
+
+    answered=true; // markiert: wurde bewertet
+
     if(normMul(input)===normMul(correctSolution)){
       resultEl.style.color="green";
-      if(firstTry){resultEl.innerText="✅ Richtig! (+1 Punkt)";score++;segments[round-1].style.backgroundColor="#4caf50";}
-      else{resultEl.innerText="✅ Richtig – aber kein Punkt mehr";segments[round-1].style.backgroundColor="#4caf50";}
+      if(firstTry){resultEl.innerText="✅ Richtig! (+1 Punkt)";score++;}
+      else{resultEl.innerText="✅ Richtig – aber kein Punkt mehr";}
+      segments[round-1].style.backgroundColor="#4caf50";
     }else{
       resultEl.style.color="#000";
-      segments[round-1].style.backgroundColor="#d9534f"; // nur Segment rot färben
+      segments[round-1].style.backgroundColor="#d9534f";
       const exp=explanations[level];
       let html=`<span style="color:#d00;">❌ Falsch!</span> Richtige Lösung: <b>${correctSolution}</b><br>`;
       if(exp){
@@ -300,6 +289,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       resultEl.innerHTML=html;
     }
+
     firstTry=false;
     round++;
     scoreEl.innerText=`Aufgabe ${Math.min(round,totalRounds)} von ${totalRounds} – Punkte: ${score}`;
