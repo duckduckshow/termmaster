@@ -192,7 +192,13 @@ document.addEventListener("DOMContentLoaded", () => {
         "   gleiche Vorzeichen → +",
         "   verschiedene Vorzeichen → −",
         "<b>2. Zahlen multiplizieren</b>"
-      ],example:"(−3) · (−2) = +6"},
+      ],
+      example:`(−3) · (−2) = +6<br>
+<b>Beispiel mit 3 Faktoren:</b><br>
+(−2) · (−4) · (3)<br>
+= (+8) · (3)<br>
+= +24`
+    },
     2:{steps:[
         "<b>1. Vorzeichen bestimmen:</b>",
         "   gleiche Vorzeichen → +",
@@ -219,6 +225,7 @@ document.addEventListener("DOMContentLoaded", () => {
         "<b>2. Passendes Verfahren anwenden</b>"
       ],example:"(2x + 1)(x − 4) = 2x² − 7x − 4"}
   };
+
 
   // ---------- Fortschritt, Level & Anzeige ----------
   function updateProgress(){ progressBar.style.width=((round-1)/totalRounds*100)+"%"; }
