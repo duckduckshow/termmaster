@@ -79,11 +79,26 @@ document.addEventListener("DOMContentLoaded", () => {
   const formatCoeff=(n,isVar)=>{if(!isVar)return String(n);if(n===1)return"";if(n===-1)return"-";return String(n);};
   const normMul=s=>s.replace(/\s+/g,'').replace(/^(\+)?/,'').replace(/²/g,'^2').replace(/³/g,'^3').replace(/−/g,'-').toLowerCase();
 
-  // Alphabetische Sortierung
+  // Alphabetische Sortierung + gleiche Variablen zu Potenzen zusammenfassen
   function sortVars(term) {
-    const parts = [...term.matchAll(/([a-z])(\^?\d?|[²³]?)/g)].map(m => [m[1], m[2] || ""]);
-    parts.sort((a,b) => a[0].localeCompare(b[0]));
-    return parts.map(p => p.join("")).join("");
+    const normalized = String(term)
+      .replace(/\s+/g, '')
+      .replace(/²/g, '^2')
+      .replace(/³/g, '^3');
+
+    const matches = [...normalized.matchAll(/([a-z])(?:\^(\d+))?/g)];
+    const counts = {};
+    for (const [, v, exp] of matches) {
+      counts[v] = (counts[v] || 0) + (exp ? parseInt(exp, 10) : 1);
+    }
+
+    return Object.keys(counts).sort().map(v => {
+      const k = counts[v];
+      if (k === 1) return v;
+      if (k === 2) return v + '²';
+      if (k === 3) return v + '³';
+      return v + '^' + k; // Fallback ab 4
+    }).join('');
   }
 
   let level=1, correctSolution="", round=1, score=0, totalRounds=10;
@@ -111,7 +126,7 @@ document.addEventListener("DOMContentLoaded", () => {
     "Level 5: Gemischt"
   ];
 
-  // Aufgabenfunktionen (unverändert)
+  // --- Aufgabenfunktionen ---
   function createIntTask(){
     const count=Math.random()<0.5?2:3;
     let nums=[], res=1;
@@ -130,99 +145,77 @@ document.addEventListener("DOMContentLoaded", () => {
     }).join(" · ")+" = ?";
   }
 
-function createSimpleTask(){
-  const count = Math.random() < 0.5 ? 2 : 3;
-  let coeff = 1, vars = [];
-  let text = "";
+  function createSimpleTask(){
+    const count = Math.random() < 0.5 ? 2 : 3;
+    let coeff = 1, vars = [];
+    let text = "";
 
-  // In etwa 1/3 der Fälle sollen gleiche Variablen verwendet werden
-  const sameVarChance = Math.random() < 0.33;
-  const baseVar = randomVar();
+    const sameVarChance = Math.random() < 0.33;
+    const baseVar = randomVar();
 
-  for (let i = 0; i < count; i++) {
-    const s = randomSign() === '-' ? -1 : 1;
-    const max = (count === 3) ? 3 : 9;
-    const n = randomChoice([...Array(max).keys()].map(x => x + 1));
+    for (let i = 0; i < count; i++) {
+      const s = randomSign() === '-' ? -1 : 1;
+      const max = (count === 3) ? 3 : 9;
+      const n = randomChoice([...Array(max).keys()].map(x => x + 1));
 
-    // Entscheide, ob gleiche oder verschiedene Variable
-    const hasVar = (count === 3) ? (Math.random() < 0.66) : true;
-    const v = hasVar ? (sameVarChance ? baseVar : randomVar()) : "";
+      const hasVar = (count === 3) ? (Math.random() < 0.66) : true;
+      const v = hasVar ? (sameVarChance ? baseVar : randomVar()) : "";
 
-    coeff *= s * n;
-    if (hasVar) vars.push(v);
+      coeff *= s * n;
+      if (hasVar) vars.push(v);
 
-    const plusForm = (n > 0 && Math.random() < 0.75);
-    const inner = (plusForm && s === 1) ? `(+${n}${v})` : `(${s === -1 ? '-' : ''}${n}${v})`;
-    text += inner + " · ";
+      const plusForm = (n > 0 && Math.random() < 0.75);
+      const inner = (plusForm && s === 1) ? `(+${n}${v})` : `(${s === -1 ? '-' : ''}${n}${v})`;
+      text += inner + " · ";
+    }
+
+    text = text.slice(0, -3);
+
+    vars.sort();
+    const varCount = {};
+    for (const v of vars) varCount[v] = (varCount[v] || 0) + 1;
+
+    let varsPart = "";
+    for (const [v, exp] of Object.entries(varCount))
+      varsPart += v + (exp > 1 ? (exp === 2 ? '²' : '³') : '');
+    varsPart = sortVars(varsPart);
+
+    correctSolution = `${formatCoeff(coeff, true)}${varsPart}`;
+    return `${text} = ?`;
   }
 
-  text = text.slice(0, -3);
+  function createMonomBinom() {
+    const coeff = randomCoeff() * (Math.random() < 0.5 ? -1 : 1);
+    const v1 = randomVar();
+    const exp1 = Math.floor(Math.random() * 3) + 1;
+    const monom = `${formatCoeff(coeff, true)}${v1}${exp1 > 1 ? (exp1 === 2 ? '²' : '³') : ''}`;
 
-// Alphabetische Sortierung + gleiche Variablen zu Potenzen zusammenfassen
-function sortVars(term) {
-  // Normalisieren, damit sowohl ²/³ als auch ^2/^3 verstanden werden
-  const normalized = String(term)
-    .replace(/\s+/g, '')
-    .replace(/²/g, '^2')
-    .replace(/³/g, '^3');
+    let v2 = randomVar();
+    if (v2 === v1 && exp1 >= 2) {
+      do { v2 = randomVar(); } while (v2 === v1);
+    }
 
-  // a^k, a (implizit ^1) einsammeln
-  const matches = [...normalized.matchAll(/([a-z])(?:\^(\d+))?/g)];
-  const counts = {};
-  for (const [, v, exp] of matches) {
-    counts[v] = (counts[v] || 0) + (exp ? parseInt(exp, 10) : 1);
+    const b1 = randomCoeff() * (Math.random() < 0.5 ? -1 : 1);
+    const b2 = randomCoeff() * (Math.random() < 0.5 ? -1 : 1);
+
+    const binom = `(${b1 >= 0 ? '+':''}${b1}${v2} ${b2 >= 0 ? '+':'-'} ${Math.abs(b2)})`;
+
+    const expPart = exp1 > 1 ? (exp1 === 2 ? '²' : '³') : '';
+    let vars1 = sortVars(v1 + expPart + v2);
+    let vars2 = sortVars(v1 + expPart);
+
+    if (vars1.includes(v1 + '⁴') || vars1.includes(v1 + '^4')) {
+      return createMonomBinom();
+    }
+
+    const term1 = `${coeff * b1}${vars1}`;
+    const term2 = `${coeff * b2}${vars2}`;
+    correctSolution = `${term1.startsWith('-') ? '' : '+'}${term1} ${term2.startsWith('-') ? '' : '+'} ${term2}`
+      .replace(/\+\s*-/g, '- ')
+      .replace(/^\+\s*/, '');
+
+    return `${monom} · ${binom} = ?`;
   }
-
-  // alphabetisch ausgeben und Potenzen hübsch schreiben
-  return Object.keys(counts).sort().map(v => {
-    const k = counts[v];
-    if (k === 1) return v;
-    if (k === 2) return v + '²';
-    if (k === 3) return v + '³';
-    return v + '^' + k; // Fallback ab 4
-  }).join('');
-}
-
-
-
- function createMonomBinom() {
-  const coeff = randomCoeff() * (Math.random() < 0.5 ? -1 : 1);
-  const v1 = randomVar();
-  const exp1 = Math.floor(Math.random() * 3) + 1; // Hoch 1–3
-  const monom = `${formatCoeff(coeff, true)}${v1}${exp1 > 1 ? (exp1 === 2 ? '²' : '³') : ''}`;
-
-  // Jetzt sicherstellen: keine Hochzahl über 3 entsteht!
-  // Wenn Monom z. B. m³, dann darf Binom KEIN 'm'-Term enthalten.
-  let v2 = randomVar();
-  if (v2 === v1 && exp1 >= 2) {
-    // Wähle anderes Variablenzeichen
-    do { v2 = randomVar(); } while (v2 === v1);
-  }
-
-  const b1 = randomCoeff() * (Math.random() < 0.5 ? -1 : 1);
-  const b2 = randomCoeff() * (Math.random() < 0.5 ? -1 : 1);
-
-  const binom = `(${b1 >= 0 ? '+':''}${b1}${v2} ${b2 >= 0 ? '+':'-'} ${Math.abs(b2)})`;
-
-  // Lösung
-  const expPart = exp1 > 1 ? (exp1 === 2 ? '²' : '³') : '';
-  let vars1 = sortVars(v1 + expPart + v2);
-  let vars2 = sortVars(v1 + expPart);
-
-  // prüfen, ob m⁴ oder höher entstehen würde → falls ja, abbrechen und neu erstellen
-  if (vars1.includes(v1 + '⁴') || vars1.includes(v1 + '^4')) {
-    return createMonomBinom(); // neu generieren
-  }
-
-  const term1 = `${coeff * b1}${vars1}`;
-  const term2 = `${coeff * b2}${vars2}`;
-  correctSolution = `${term1.startsWith('-') ? '' : '+'}${term1} ${term2.startsWith('-') ? '' : '+'} ${term2}`
-    .replace(/\+\s*-/g, '- ')
-    .replace(/^\+\s*/, '');
-
-  return `${monom} · ${binom} = ?`;
-}
-
 
   function createGeneralBinom(){
     let v1=randomVar(),v2=randomVar();
@@ -260,7 +253,6 @@ function sortVars(term) {
     return `(${a}${v} + ${b}) · (${a}${v} - ${b}) = ?`;
   }
 
-  // Lösungswege
   const explanations = {
     1:{steps:["<b>1. Vorzeichen bestimmen:</b>","   gleiche Vorzeichen → +","   verschiedene Vorzeichen → −","<b>2. Zahlen multiplizieren</b>"],
       example:`3 · 2 = 6<br><b>Beispiel mit 3 Faktoren:</b><br>(−2) · (−4) · (3)<br>= (+8) · (3)<br>= +24`},
@@ -306,7 +298,7 @@ function sortVars(term) {
     if(!input){resultEl.style.color="#555";resultEl.innerText="Bitte gib eine Lösung ein.";return;}
     answerEl.blur();
 
-    if(answered){  // schon beantwortet → kein neuer Balken
+    if(answered){
       if(normMul(input)===normMul(correctSolution)){
         resultEl.style.color="green";
         resultEl.innerText="✅ Richtig – aber kein Punkt mehr";
@@ -317,7 +309,7 @@ function sortVars(term) {
       return;
     }
 
-    answered=true; // markiert: wurde bewertet
+    answered=true;
 
     if(normMul(input)===normMul(correctSolution)){
       resultEl.style.color="green";
@@ -333,22 +325,4 @@ function sortVars(term) {
         html+=`<details open><summary style="color:#007bff;cursor:pointer;">🧩 Lösungsweg anzeigen</summary>`;
         html+=`<div style="text-align:left;max-width:420px;margin:6px auto;font-size:0.95em;line-height:1.4;color:#000;">`;
         html+=exp.steps.map(s=>`<div>${s}</div>`).join("");
-        html+=`<div style="margin-top:6px;font-style:italic;">Beispiel: ${exp.example}</div></div></details>`;
-      }
-      resultEl.innerHTML=html;
-    }
-
-    firstTry=false;
-    round++;
-    scoreEl.innerText=`Aufgabe ${Math.min(round,totalRounds)} von ${totalRounds} – Punkte: ${score}`;
-  }
-
-  checkBtn.addEventListener("click",checkAnswer);
-  newBtn.addEventListener("click",newTask);
-  answerEl.addEventListener("keydown",e=>{if(e.key==="Enter")checkAnswer();});
-  initProgressBar();
-  newTask();
-});
-</script>
-</body>
-</html>
+        html+=`<div style="margin-top:6px;font-style:italic;">Beispiel: ${exp
