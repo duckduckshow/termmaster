@@ -145,7 +145,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }).join(" · ")+" = ?";
   }
 
-  function createSimpleTask(){
+ function createSimpleTask(){
   const count = Math.random() < 0.5 ? 2 : 3;
   let coeff = 1, vars = [];
   let text = "";
@@ -166,9 +166,15 @@ document.addEventListener("DOMContentLoaded", () => {
     coeff *= s * n;
     if (hasVar) vars.push(v);
 
-    // Darstellung: 1x → x, −1x → −x, aber 2x bleibt 2x
-    let numPart = (n === 1 ? "" : n);
-    if (s === -1) numPart = (n === 1 ? "-" : "-" + n);
+    let numPart;
+    if (hasVar) {
+      // Wenn Variable: 1x → x, −1x → −x
+      if (n === 1) numPart = (s === -1 ? "-" : "");
+      else numPart = (s === -1 ? "-" : "") + n;
+    } else {
+      // Wenn keine Variable: Zahl immer vollständig anzeigen
+      numPart = (s === -1 ? "-" : "") + n;
+    }
 
     const plusForm = (s === 1 && Math.random() < 0.75);
     const inner = plusForm ? `(+${numPart}${v})` : `(${numPart}${v})`;
@@ -190,6 +196,7 @@ document.addEventListener("DOMContentLoaded", () => {
   correctSolution = `${formatCoeff(coeff, true)}${varsPart}`;
   return `${text} = ?`;
 }
+
 
 
   function createMonomBinom() {
