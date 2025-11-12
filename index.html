@@ -150,7 +150,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let coeff = 1, vars = [];
   let text = "";
 
-  // Höhere Wahrscheinlichkeit für gleiche Variablen (80 %)
+  // Häufig gleiche Variablen
   const sameVarChance = Math.random() < 0.8;
   const baseVar = randomVar();
 
@@ -159,15 +159,19 @@ document.addEventListener("DOMContentLoaded", () => {
     const max = (count === 3) ? 3 : 9;
     const n = randomChoice([...Array(max).keys()].map(x => x + 1));
 
-    // In 90 % der Fälle hat der Faktor eine Variable
+    // In 90 % der Fälle mit Variable
     const hasVar = Math.random() < 0.9;
     const v = hasVar ? (sameVarChance ? baseVar : randomVar()) : "";
 
     coeff *= s * n;
     if (hasVar) vars.push(v);
 
-    const plusForm = (n > 0 && Math.random() < 0.75);
-    const inner = (plusForm && s === 1) ? `(+${n}${v})` : `(${s === -1 ? '-' : ''}${n}${v})`;
+    // Darstellung: 1x → x, −1x → −x, aber 2x bleibt 2x
+    let numPart = (n === 1 ? "" : n);
+    if (s === -1) numPart = (n === 1 ? "-" : "-" + n);
+
+    const plusForm = (s === 1 && Math.random() < 0.75);
+    const inner = plusForm ? `(+${numPart}${v})` : `(${numPart}${v})`;
     text += inner + " · ";
   }
 
@@ -186,6 +190,7 @@ document.addEventListener("DOMContentLoaded", () => {
   correctSolution = `${formatCoeff(coeff, true)}${varsPart}`;
   return `${text} = ?`;
 }
+
 
   function createMonomBinom() {
     const coeff = randomCoeff() * (Math.random() < 0.5 ? -1 : 1);
