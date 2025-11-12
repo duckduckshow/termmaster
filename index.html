@@ -146,43 +146,46 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function createSimpleTask(){
-    const count = Math.random() < 0.5 ? 2 : 3;
-    let coeff = 1, vars = [];
-    let text = "";
+  const count = Math.random() < 0.5 ? 2 : 3;
+  let coeff = 1, vars = [];
+  let text = "";
 
-    const sameVarChance = Math.random() < 0.33;
-    const baseVar = randomVar();
+  // Höhere Wahrscheinlichkeit für gleiche Variablen (80 %)
+  const sameVarChance = Math.random() < 0.8;
+  const baseVar = randomVar();
 
-    for (let i = 0; i < count; i++) {
-      const s = randomSign() === '-' ? -1 : 1;
-      const max = (count === 3) ? 3 : 9;
-      const n = randomChoice([...Array(max).keys()].map(x => x + 1));
+  for (let i = 0; i < count; i++) {
+    const s = randomSign() === '-' ? -1 : 1;
+    const max = (count === 3) ? 3 : 9;
+    const n = randomChoice([...Array(max).keys()].map(x => x + 1));
 
-      const hasVar = (count === 3) ? (Math.random() < 0.66) : true;
-      const v = hasVar ? (sameVarChance ? baseVar : randomVar()) : "";
+    // In 90 % der Fälle hat der Faktor eine Variable
+    const hasVar = Math.random() < 0.9;
+    const v = hasVar ? (sameVarChance ? baseVar : randomVar()) : "";
 
-      coeff *= s * n;
-      if (hasVar) vars.push(v);
+    coeff *= s * n;
+    if (hasVar) vars.push(v);
 
-      const plusForm = (n > 0 && Math.random() < 0.75);
-      const inner = (plusForm && s === 1) ? `(+${n}${v})` : `(${s === -1 ? '-' : ''}${n}${v})`;
-      text += inner + " · ";
-    }
-
-    text = text.slice(0, -3);
-
-    vars.sort();
-    const varCount = {};
-    for (const v of vars) varCount[v] = (varCount[v] || 0) + 1;
-
-    let varsPart = "";
-    for (const [v, exp] of Object.entries(varCount))
-      varsPart += v + (exp > 1 ? (exp === 2 ? '²' : '³') : '');
-    varsPart = sortVars(varsPart);
-
-    correctSolution = `${formatCoeff(coeff, true)}${varsPart}`;
-    return `${text} = ?`;
+    const plusForm = (n > 0 && Math.random() < 0.75);
+    const inner = (plusForm && s === 1) ? `(+${n}${v})` : `(${s === -1 ? '-' : ''}${n}${v})`;
+    text += inner + " · ";
   }
+
+  text = text.slice(0, -3);
+
+  // Variablen zusammenfassen
+  vars.sort();
+  const varCount = {};
+  for (const v of vars) varCount[v] = (varCount[v] || 0) + 1;
+
+  let varsPart = "";
+  for (const [v, exp] of Object.entries(varCount))
+    varsPart += v + (exp > 1 ? (exp === 2 ? '²' : '³') : '');
+  varsPart = sortVars(varsPart);
+
+  correctSolution = `${formatCoeff(coeff, true)}${varsPart}`;
+  return `${text} = ?`;
+}
 
   function createMonomBinom() {
     const coeff = randomCoeff() * (Math.random() < 0.5 ? -1 : 1);
