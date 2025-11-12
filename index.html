@@ -158,19 +158,31 @@ function createSimpleTask(){
 
   text = text.slice(0, -3);
 
-  // Variablen zählen
-  vars.sort();
-  const varCount = {};
-  for (const v of vars) varCount[v] = (varCount[v] || 0) + 1;
+// Alphabetische Sortierung + gleiche Variablen zu Potenzen zusammenfassen
+function sortVars(term) {
+  // Normalisieren, damit sowohl ²/³ als auch ^2/^3 verstanden werden
+  const normalized = String(term)
+    .replace(/\s+/g, '')
+    .replace(/²/g, '^2')
+    .replace(/³/g, '^3');
 
-  let varsPart = "";
-  for (const [v, exp] of Object.entries(varCount))
-    varsPart += v + (exp > 1 ? (exp === 2 ? '²' : '³') : '');
-  varsPart = sortVars(varsPart);
+  // a^k, a (implizit ^1) einsammeln
+  const matches = [...normalized.matchAll(/([a-z])(?:\^(\d+))?/g)];
+  const counts = {};
+  for (const [, v, exp] of matches) {
+    counts[v] = (counts[v] || 0) + (exp ? parseInt(exp, 10) : 1);
+  }
 
-  correctSolution = `${formatCoeff(coeff, true)}${varsPart}`;
-  return `${text} = ?`;
+  // alphabetisch ausgeben und Potenzen hübsch schreiben
+  return Object.keys(counts).sort().map(v => {
+    const k = counts[v];
+    if (k === 1) return v;
+    if (k === 2) return v + '²';
+    if (k === 3) return v + '³';
+    return v + '^' + k; // Fallback ab 4
+  }).join('');
 }
+
 
 
  function createMonomBinom() {
